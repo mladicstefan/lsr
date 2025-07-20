@@ -27,7 +27,7 @@ Just like `ls` but with colors for different file types. Because why should term
 ## 🚀 Install
 
 ```bash
-git clone <your-repo>
+git clone https://github.com/mladicstefan/lsr
 cd lsr
 cargo install --path .
 lsr
