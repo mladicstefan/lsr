@@ -1,4 +1,27 @@
-use std::fs::{self, ReadDir};
+use chrono::{DateTime, Local};
+use std::{
+    fs::{self, ReadDir},
+    os::unix::fs::PermissionsExt,
+};
+
+fn format_permissions(mode: u32) -> String {
+    // remove filetype bits
+    let perm_bits = mode & 0o777;
+    let mut result = String::with_capacity(10);
+
+    // shift the bitmask for all 3 octal pairs in binary
+    for shift in [6, 3, 0] {
+        let group = (perm_bits >> shift) & 0o7;
+
+        //check read bit
+        result.push(if group & 0o4 != 0 { 'r' } else { '-' });
+        //check write bit
+        result.push(if group & 0o2 != 0 { 'w' } else { '-' });
+        // check execute bit
+        result.push(if group & 0o1 != 0 { 'x' } else { '-' });
+    }
+    return result;
+}
 
 fn get_file_metadata(files: ReadDir) {
     for file in files {
@@ -16,11 +39,14 @@ fn get_file_metadata(files: ReadDir) {
                 continue;
             }
         };
+
+        let modified: DateTime<Local> = file_metadata.modified().unwrap().into();
+        let perm_bits: u32 = file_metadata.permissions().mode();
         println!(
             "{:?} - {:?} - {:?} - {:?}",
+            format_permissions(perm_bits),
+            modified,
             file.file_name(),
-            file_metadata.permissions(),
-            file_metadata.modified(),
             file_metadata.file_type(),
         );
     }
