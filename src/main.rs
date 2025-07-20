@@ -1,11 +1,90 @@
 use chrono::{DateTime, Local};
-use colored::Colorize;
+use colored::{Color, Colorize};
 use std::{
     fs::{self, DirEntry, Metadata, ReadDir},
     os::unix::fs::PermissionsExt,
     path::Path,
     time::SystemTime,
 };
+
+fn get_extension_color(ext: &str) -> Color {
+    match ext.to_lowercase().as_str() {
+        // Systems Programming
+        "rs" => Color::Red,
+        "go" => Color::Blue,
+        "c" => Color::BrightBlue,
+        "cpp" | "cc" | "cxx" => Color::BrightBlue,
+        "zig" => Color::BrightYellow,
+
+        // Web Frontend
+        "js" | "mjs" => Color::Yellow,
+        "ts" => Color::BrightYellow,
+        "jsx" | "tsx" => Color::BrightCyan,
+        "html" | "htm" => Color::BrightRed,
+        "css" => Color::Blue,
+        "scss" | "sass" => Color::BrightMagenta,
+        "vue" => Color::Green,
+
+        // Backend/Scripting
+        "py" => Color::Green,
+        "rb" => Color::BrightRed,
+        "php" => Color::Magenta,
+        "java" => Color::BrightRed,
+        "cs" => Color::BrightMagenta,
+        "swift" => Color::BrightCyan,
+        "kt" => Color::BrightGreen,
+        "scala" => Color::Red,
+        "clj" | "cljs" => Color::Green,
+
+        // Shell/Config
+        "sh" | "bash" | "zsh" => Color::BrightGreen,
+        "fish" => Color::BrightBlue,
+        "ps1" => Color::Blue,
+        "bat" | "cmd" => Color::BrightYellow,
+
+        // Data/Config
+        "json" => Color::Yellow,
+        "yaml" | "yml" => Color::BrightYellow,
+        "toml" => Color::BrightCyan,
+        "xml" => Color::BrightYellow,
+        "csv" => Color::Green,
+
+        // Documents
+        "md" | "markdown" => Color::White,
+        "txt" => Color::White,
+        "pdf" => Color::BrightRed,
+        "doc" | "docx" => Color::BrightBlue,
+
+        // Images
+        "png" | "jpg" | "jpeg" | "gif" | "webp" => Color::Magenta,
+        "svg" => Color::BrightCyan,
+        "ico" => Color::BrightMagenta,
+
+        // Archives
+        "zip" | "tar" | "gz" | "7z" | "rar" => Color::BrightRed,
+
+        // Executables
+        "exe" | "msi" => Color::Red,
+        "deb" | "rpm" => Color::BrightRed,
+        "dmg" => Color::BrightMagenta,
+
+        // Default
+        _ => Color::White,
+    }
+}
+
+fn get_file_color(filename: &str) -> Color {
+    if let Some(ext) = filename.split('.').last() {
+        if ext != filename {
+            // Has extension
+            get_extension_color(ext)
+        } else {
+            Color::White // No extension
+        }
+    } else {
+        Color::White
+    }
+}
 
 fn format_permissions(mode: u32) -> String {
     // remove filetype bits
@@ -33,16 +112,17 @@ fn format_datetime(modified: &std::result::Result<SystemTime, std::io::Error>) -
 }
 
 fn format_name(file: &DirEntry, metadata: &Metadata) -> String {
-    let mut file_name: String = file
+    let file_name: String = file
         .file_name()
         .into_string()
         .expect("Failed to convert filename...");
 
     if metadata.file_type().is_dir() == true {
-        file_name.push_str("/.");
-        file_name = file_name.bold().blue().to_string();
+        format!("{}/", file_name.bold().blue())
+    } else {
+        let color = get_file_color(&file_name);
+        return file_name.color(color).to_string();
     }
-    return file_name;
 }
 
 fn get_file_metadata(files: ReadDir) {
