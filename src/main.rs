@@ -2,6 +2,7 @@ use chrono::{DateTime, Local};
 use std::{
     fs::{self, ReadDir},
     os::unix::fs::PermissionsExt,
+    time::SystemTime,
 };
 
 fn format_permissions(mode: u32) -> String {
@@ -23,6 +24,12 @@ fn format_permissions(mode: u32) -> String {
     return result;
 }
 
+fn format_datetime(modified: std::result::Result<SystemTime, std::io::Error>) -> String {
+    let time = modified.expect("Failed to get system time");
+    let dt: DateTime<Local> = DateTime::from(time);
+    dt.format("%b %e %H:%M:%S").to_string()
+}
+
 fn get_file_metadata(files: ReadDir) {
     for file in files {
         let file = match file {
@@ -40,12 +47,11 @@ fn get_file_metadata(files: ReadDir) {
             }
         };
 
-        let modified: DateTime<Local> = file_metadata.modified().unwrap().into();
         let perm_bits: u32 = file_metadata.permissions().mode();
         println!(
             "{:?} - {:?} - {:?} - {:?}",
             format_permissions(perm_bits),
-            modified,
+            format_datetime(file_metadata.modified()),
             file.file_name(),
             file_metadata.file_type(),
         );
