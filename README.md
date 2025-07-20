@@ -9,12 +9,12 @@
   <div align="center">
   <p>Made with ❤️ and ☕</p>
   </div>
-  ![LSR](assets/lsr.gif)
 
 </div>
 
 ---
 
+![LSR](assets/lsr.gif)
 ## What it does
 
 Just like `ls` but with colors for different file types. Because why should terminals be boring?
