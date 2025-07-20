@@ -1,7 +1,9 @@
 use chrono::{DateTime, Local};
+use colored::Colorize;
 use std::{
     fs::{self, DirEntry, Metadata, ReadDir},
     os::unix::fs::PermissionsExt,
+    path::Path,
     time::SystemTime,
 };
 
@@ -38,6 +40,7 @@ fn format_name(file: &DirEntry, metadata: &Metadata) -> String {
 
     if metadata.file_type().is_dir() == true {
         file_name.push_str("/.");
+        file_name = file_name.bold().blue().to_string();
     }
     return file_name;
 }
@@ -63,7 +66,7 @@ fn get_file_metadata(files: ReadDir) {
         let perm_bits: u32 = file_metadata.permissions().mode();
 
         println!(
-            "{:?} - {:?} - {:?}",
+            "{} - {} - {}",
             format_permissions(perm_bits),
             format_datetime(&file_metadata.modified()),
             format_name(&file, &file_metadata),
@@ -72,14 +75,33 @@ fn get_file_metadata(files: ReadDir) {
     }
 }
 
+fn get_pwd_metadata(path: &Path) {
+    let metadata = match fs::metadata(&path) {
+        Ok(meta) => meta,
+        Err(e) => {
+            eprint!("{:?}", e);
+            return;
+        }
+    };
+    let str_path = path.to_str().expect("Failed to convert PWD to str");
+
+    let perm_bits: u32 = metadata.permissions().mode();
+    println!(
+        "{} - {}",
+        format_permissions(perm_bits),
+        str_path.bold().blue().to_string(),
+    );
+}
+
 fn main() {
-    let path = std::env::current_dir().expect("Couldn't find current dir");
-    println!("PWD: {:?}", &path);
-
-    // let metadata = fs::metadata(&path).unwrap();
-
-    // println!("{:?}", metadata);
-
+    let path = match std::env::current_dir() {
+        Ok(path) => path,
+        Err(e) => {
+            eprintln!("Error: {:?}", e);
+            std::process::exit(1);
+        }
+    };
+    get_pwd_metadata(&path);
     let files = fs::read_dir(&path).unwrap();
     get_file_metadata(files);
 }
