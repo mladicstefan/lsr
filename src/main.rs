@@ -1,6 +1,6 @@
 use chrono::{DateTime, Local};
 use std::{
-    fs::{self, ReadDir},
+    fs::{self, DirEntry, Metadata, ReadDir},
     os::unix::fs::PermissionsExt,
     time::SystemTime,
 };
@@ -24,10 +24,22 @@ fn format_permissions(mode: u32) -> String {
     return result;
 }
 
-fn format_datetime(modified: std::result::Result<SystemTime, std::io::Error>) -> String {
-    let time = modified.expect("Failed to get system time");
-    let dt: DateTime<Local> = DateTime::from(time);
-    dt.format("%b %e %H:%M:%S").to_string()
+fn format_datetime(modified: &std::result::Result<SystemTime, std::io::Error>) -> String {
+    let time = modified.as_ref().expect("Failed to get system time");
+    let dt: DateTime<Local> = DateTime::from(*time);
+    return dt.format("%b %e %H:%M:%S").to_string();
+}
+
+fn format_name(file: &DirEntry, metadata: &Metadata) -> String {
+    let mut file_name: String = file
+        .file_name()
+        .into_string()
+        .expect("Failed to convert filename...");
+
+    if metadata.file_type().is_dir() == true {
+        file_name.push_str("/.");
+    }
+    return file_name;
 }
 
 fn get_file_metadata(files: ReadDir) {
@@ -39,6 +51,7 @@ fn get_file_metadata(files: ReadDir) {
                 continue;
             }
         };
+
         let file_metadata = match file.metadata() {
             Ok(meta) => meta,
             Err(e) => {
@@ -48,23 +61,24 @@ fn get_file_metadata(files: ReadDir) {
         };
 
         let perm_bits: u32 = file_metadata.permissions().mode();
+
         println!(
-            "{:?} - {:?} - {:?} - {:?}",
+            "{:?} - {:?} - {:?}",
             format_permissions(perm_bits),
-            format_datetime(file_metadata.modified()),
-            file.file_name(),
-            file_metadata.file_type(),
+            format_datetime(&file_metadata.modified()),
+            format_name(&file, &file_metadata),
+            // file_metadata.file_type(),
         );
     }
 }
 
 fn main() {
     let path = std::env::current_dir().expect("Couldn't find current dir");
-    println!("Running in dir {:?}", &path);
+    println!("PWD: {:?}", &path);
 
-    let metadata = fs::metadata(&path).unwrap();
+    // let metadata = fs::metadata(&path).unwrap();
 
-    println!("{:?}", metadata);
+    // println!("{:?}", metadata);
 
     let files = fs::read_dir(&path).unwrap();
     get_file_metadata(files);
